@@ -1,6 +1,7 @@
 #include <cstring>
 #include <cstdlib>
 #include "Stack.h"
+#include "Stack.cpp"
 #include <cctype>
 #include <iostream>
 using std::cout;
@@ -63,40 +64,68 @@ double divide(double a, double b) {
 
 void infix_to_postfix(const char* infix, char* postfix)
 {
+	stack<char, 100> stack;
 	int j = 0;
 	for (int i = 0; infix[i] != '\0'; i++) {
-		if (isdigit(infix[i]) || isspace(infix[i])) {
-			postfix[j++] = infix[i];
+		char c = infix[i];
+		if (isdigit(c) || isspace(c)) {
+			postfix[j++] = c;
 		}
-		else if (infix[i] == '+' || infix[i] == '-' || infix[i] == '*' || infix[i] == '/') {
-			char top = top_element();
-			if (getPriority(top) >= getPriority(infix[i])) {
-				postfix[j++] = top;
-				pop();
-				push(infix[i]);
+		else if (c == '+' || c == '-' || c == '*' || c == '/') {
+			char top = top_element(stack);
+			if (getPriority(top_element(stack)) >= getPriority(c)) {
+				postfix[j++] = pop(stack);
 			}
+			push(stack, c);
 		}
 	}
-	while (!is_empty()) {
-		char top = pop();
+	while (!is_empty(stack)) {
+		char top = pop(stack);
 		postfix[j++] = top;
 	}
 	postfix[j] = '\0';
 }
 
-double calculate(const char* expression) {
+
+
+double calculate_postfix(const char* postfix)
+{
 	double (*action[])(double, double) = {
-		plus, minus, multiply, divide
+	plus, minus, multiply, divide
 	};
+
+	stack<double, 100> numbers;
+	for (int i = 0; postfix[i] != '\0'; i++) {
+		char c = postfix[i];
+		if (isdigit(c)) {
+			double d = atof(&postfix[i]);
+			push(numbers, d);
+		}
+		else if (c == '+' || c == '-' || c == '*' || c == '/') {
+			double b = pop(numbers);
+			double a = pop(numbers);
+			Operation op = getOperation(c);
+			double r = action[(int)op](a, b);
+			push(numbers, r);
+		}
+
+	}
+	return pop(numbers);
+}
+
+
+double calculate(const char* expression) {
+
 
 	char* postfix = new char[strlen(expression) + 1];
 
 	infix_to_postfix(expression, postfix);
+	double result = calculate_postfix(postfix);
 
 	delete[] postfix;
+	
+	return result;
 }
 
-bool is_empty()
-{
-	return top == 0;
-}
+
+
